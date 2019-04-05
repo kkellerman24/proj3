@@ -51,8 +51,17 @@ page_for_addr (const void *address)
         return hash_entry (e, struct page, hash_elem);
 
       /* No page.  Expand stack? */
-
-/* add code */
+	  /* For the implementation below
+	   * make sure the address is within stack bounds
+	   * make sure user is accessing address within what is needed for a PUSHA command (32 bytes)
+	   * of the stack pointers.
+	   * If both conditions are true, allocate a stack page
+	   */
+	  /* add code */
+	  if ((p.addr > PHYS_BASE - STACK_MAX) && ((void *)thread_current()->user_esp - 32 < address))
+	  {
+		  return page_allocate(p.addr, false);
+	  }
 
     }
   return NULL;
@@ -145,15 +154,44 @@ page_out (struct page *p)
      dirty bit, to prevent a race with the process dirtying the
      page. */
 
-/* add code here */
+	/* add code here */
+	pagedir_clear_page(p->thread->pagedir, (void *) p->addr);
 
   /* Has the frame been modified? */
-
-/* add code here */
-
-  /* Write frame contents to disk if necessary. */
-
-/* add code here */
+	/* add code here */
+	/* if it has been modified, it means it is dirty so we mark it as dirty */
+	dirty = pagedir_is_dirty(p->thread->pagedir, (const void *)p->addr);
+	
+	if (!dirty)
+		ok = true; /* means it was successful or not modified */
+	
+	/* Write frame contents to disk if necessary. */
+	/* add code here */
+	if (p->file == NULL) /* if we have a null file, can't write frame to disk */
+	{
+		ok = swap_out(p); /* swap out frame if we have a null file, save result of swap */
+	}
+	else
+	{
+		if (dirty)
+		{
+			if (p->private)
+			{
+				ok = swap_out(p);
+			}
+			else
+			{
+				//file system locks here??
+				ok = file_write_at(p->file, (const void *) p->frame->base, p->file_bytes, p->file_offset);
+			}
+		}
+	}
+		
+	/* success, no modification, clear page frame */
+	if(ok)
+	{
+		p->frame = NULL;
+	}
 
   return ok;
 }

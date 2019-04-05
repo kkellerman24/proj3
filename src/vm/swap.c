@@ -74,7 +74,14 @@ swap_out (struct page *p)
   p->sector = slot * PAGE_SECTORS;
 
   // Write out page sectors
-/* add code here */ 
+	/* add code here */ 
+	for (i = 0; i < PAGE_SECTORS; i++) 
+	{
+		block_write(swap_device, p->sector + i,
+					(uint8_t *)p->frame->base + i * BLOCK_SECTOR_SIZE);
+	} 
+	//is the bitmap_reset and updating sector needed???
+	//END NEW CODE
  
   p->private = false;
   p->file = NULL;
