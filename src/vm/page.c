@@ -181,8 +181,9 @@ page_out (struct page *p)
 			}
 			else
 			{
-				//file system locks here??
+				lock_acquire(&fs_lock);
 				ok = file_write_at(p->file, (const void *) p->frame->base, p->file_bytes, p->file_offset);
+				lock_release(&fs_lock);
 			}
 		}
 	}
